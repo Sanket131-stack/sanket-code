@@ -1,0 +1,68 @@
+import pandas as pd
+import numpy as np
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+
+# -------------------------
+# 1. Load Raw Data
+# -------------------------
+data = # data collection from client
+
+df = pd.DataFrame(data)
+print("RAW DATA:")
+print(df, "\n")
+
+# -------------------------
+# 2. Define Numerical & Categorical Columns
+# -------------------------
+num_features = ['Age', 'Salary']
+cat_features = ['Gender']
+
+# -------------------------
+# 3. Create Transformers
+# -------------------------
+# For numeric data → fill missing with mean, then scale
+num_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='mean')),
+    ('scaler', StandardScaler())
+])
+
+# For categorical data → fill missing with most frequent, then one-hot encode
+cat_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('encoder', OneHotEncoder(handle_unknown='ignore'))
+])
+
+# -------------------------
+# 4. Combine into Column Transformer
+# -------------------------
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', num_transformer, num_features),
+        ('cat', cat_transformer, cat_features)
+    ]
+)
+
+# -------------------------
+# 5. Full Pipeline (optional: can add ML model at the end)
+# -------------------------
+pipeline = Pipeline(steps=[('preprocessor', preprocessor)])
+
+# -------------------------
+# 6. Apply Pipeline
+# -------------------------
+processed_data = pipeline.fit_transform(df)
+
+# Convert back to DataFrame
+processed_df = pd.DataFrame(
+    processed_data,
+    columns=(num_features + list(pipeline.named_steps['preprocessor']
+                                 .named_transformers_['cat']
+                                 .named_steps['encoder']
+                                 .get_feature_names_out(cat_features)))
+)
+
+print("CLEANSED DATA:")
+print(processed_df)
